@@ -23,6 +23,7 @@ from wisp.models.activations import get_activation_class
 from wisp.models.decoders import BasicDecoder
 from wisp.models.grids import *
 
+
 class NeuralSDFTex(BaseNeuralField):
     """Model for encoding implicit surfaces (usually SDF) with textures.
     """
@@ -30,8 +31,8 @@ class NeuralSDFTex(BaseNeuralField):
     def init_embedder(self):
         """Creates positional embedding functions for the position and view direction.
         """
-        self.pos_embedder, self.pos_embed_dim = get_positional_embedder(self.pos_multires, 
-                                                                       self.embedder_type == "positional")
+        self.pos_embedder, self.pos_embed_dim = get_positional_embedder(self.pos_multires,
+                                                                        self.embedder_type == "positional")
         log.info(f"Position Embed Dim: {self.pos_embed_dim}")
 
     def init_decoder(self):
@@ -41,7 +42,7 @@ class NeuralSDFTex(BaseNeuralField):
             self.effective_feature_dim *= self.grid.feature_dim * self.num_lods
         else:
             self.effective_feature_dim = self.grid.feature_dim
-        
+
         self.input_dim = self.effective_feature_dim
 
         if self.position_input:
@@ -91,20 +92,20 @@ class NeuralSDFTex(BaseNeuralField):
             pidx (torch.LongTensor): SPC point_hierarchy indices of shape [batch].
                                      Unused in the current implementation.
             lod_idx (int): index into active_lods. If None, will use the maximum LOD.
-        
+
         Outputs:
             {"rgb": torch.FloatTensor, "sdf": torch.FloatTensor}:
             - RGB of shape [batch, num_samples, 3]
             - SDF of shape [batch, num_samples, 1]
         """
         shape = coords.shape
-        
+
         if shape[0] == 0:
-            return dict(rgb=torch.zeros_like(coords)[...,:3], sdf=torch.zeros_like(coords)[...,0:1])
+            return dict(rgb=torch.zeros_like(coords)[..., :3], sdf=torch.zeros_like(coords)[..., 0:1])
 
         if lod_idx is None:
             lod_idx = self.num_lods - 1
-        
+
         if len(shape) == 2:
             coords = coords[:, None]
 
@@ -117,20 +118,20 @@ class NeuralSDFTex(BaseNeuralField):
         rgbsdf = self.decoder(feats)
 
         if len(shape) == 2:
-            rgbsdf = rgbsdf[:,0]
-            
-        return dict(rgb=torch.sigmoid(rgbsdf[...,:3]), sdf=rgbsdf[...,3:4])
+            rgbsdf = rgbsdf[:, 0]
+
+        return dict(rgb=torch.sigmoid(rgbsdf[..., :3]), sdf=rgbsdf[..., 3:4])
 
 
 class NeuralSDF(BaseNeuralField):
     """Model for encoding implicit surfaces (usually SDF).
     """
-    
+
     def init_embedder(self):
         """Creates positional embedding functions for the position and view direction.
         """
-        self.pos_embedder, self.pos_embed_dim = get_positional_embedder(self.pos_multires, 
-                                                                       self.embedder_type == "positional")
+        self.pos_embedder, self.pos_embed_dim = get_positional_embedder(self.pos_multires,
+                                                                        self.embedder_type == "positional")
         log.info(f"Position Embed Dim: {self.pos_embed_dim}")
 
     def init_decoder(self):
@@ -140,7 +141,7 @@ class NeuralSDF(BaseNeuralField):
             self.effective_feature_dim *= self.grid.feature_dim * self.num_lods
         else:
             self.effective_feature_dim = self.grid.feature_dim
-        
+
         self.input_dim = self.effective_feature_dim
 
         if self.position_input:
@@ -188,19 +189,19 @@ class NeuralSDF(BaseNeuralField):
             pidx (torch.LongTensor): SPC point_hierarchy indices of shape [batch].
                                      Unused in the current implementation.
             lod_idx (int): index into active_lods. If None, will use the maximum LOD.
-        
+
         Outputs:
             (torch.FloatTensor):
             - SDF of shape [batch, num_samples, 1]
         """
         shape = coords.shape
-        
+
         if shape[0] == 0:
-            return dict(sdf=torch.zeros_like(coords)[...,0:1])
+            return dict(sdf=torch.zeros_like(coords)[..., 0:1])
 
         if lod_idx is None:
             lod_idx = self.num_lods - 1
-        
+
         # TODO(ttakikawa): Does the SDF really need num_samples? Note to myself to rethink this through...
         if len(shape) == 2:
             coords = coords[:, None]
@@ -210,12 +211,12 @@ class NeuralSDF(BaseNeuralField):
         feats = self.grid.interpolate(coords, lod_idx, pidx=pidx)
 
         if self.position_input:
-            feats = torch.cat([self.pos_embedder(coords.view(-1, 3)).view(-1, num_samples, self.pos_embed_dim), 
+            feats = torch.cat([self.pos_embedder(coords.view(-1, 3)).view(-1, num_samples, self.pos_embed_dim),
                                feats], dim=-1)
 
         sdf = self.decoder(feats)
 
         if len(shape) == 2:
-            sdf = sdf[:,0]
-            
+            sdf = sdf[:, 0]
+
         return dict(sdf=sdf)

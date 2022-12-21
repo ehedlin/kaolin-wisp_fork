@@ -47,7 +47,7 @@ renderer:
 
 trainer:
     trainer_type: 'SDFTrainer'
-    epochs: 10
+    epochs: 40
     batch_size: 512
     model_format: 'full'
     valid_every: 20
@@ -61,7 +61,7 @@ grid:
     grid_type: 'OctreeGrid'
     interpolation_type: 'linear'
     multiscale_type: 'sum'
-    feature_dim: 16
+    feature_dim: 32
     feature_std: 0.01
     base_lod: 2
     num_lods: 6
@@ -72,6 +72,5 @@ net:
     num_layers: 1
     out_dim: 1
     position_input: True
-
 embedder:
     embedder_type: 'none'
